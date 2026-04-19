@@ -13,3 +13,5 @@ with sqlite3.connect('automated_store.db') as conn:
 
 print("\n--- Давхардалгүй (Unique) барааны жагсаалт ---")
 print(nemeh_df)
+
+
