@@ -15,7 +15,7 @@ for row in soup.find_all('div', class_='col-md-4 country'):
     name = row.find('h3', class_='country-name').text.strip()
     capital = row.find('span', class_='country-capital').text.strip()
     population = row.find('span', class_='country-population').text.strip()
-
+    
     countries.append({
         'name': name,
         'capital': capital,
