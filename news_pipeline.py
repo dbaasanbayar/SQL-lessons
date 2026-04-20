@@ -83,7 +83,7 @@ def analyze_news_with_ai(title):
 
 # 2. SQL-ээс мэдээгээ унших
 with sqlite3.connect('news_analytics.db') as conn:
-    df_raw = pd.read_sql_query("SELECT * FROM raw_news LIMIT 10", conn)
+    df_raw = pd.read_sql_query("SELECT * FROM raw_news LIMIT 5", conn)
 
     analyzed_data = []
     print("AI Анализ эхэлж байна...")
@@ -108,6 +108,8 @@ with sqlite3.connect('news_analytics.db') as conn:
 
     # 3. LOAD: Анализ хийсэн датаг шинэ хүснэгтэд хадгалах
     df_final = pd.DataFrame(analyzed_data)
+    # Хэрэв өмнө нь ижил гарчигтай анализ орсон бол хамгийн сүүлийнхийг нь үлдээх
+    df_final = df_final.drop_duplicates(subset=['title'], keep='last')
     df_final.to_sql('analyzed_news', conn, if_exists='append', index=False)
 
 print("\n--- AI Анализ дууслаа! ---")
