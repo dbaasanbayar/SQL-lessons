@@ -5,6 +5,25 @@ import sqlite3
 from groq import Groq
 import os
 from dotenv import load_dotenv
+import html
+
+def clean_news_data(df):
+    print("\n--- Өгөгдөл цэвэрлэх процесс эхэллээ ---")
+
+    # URL цэвэрлэх: facebook tracker гэх мэт '?' -аас хойшхи хэсгийг салгах
+    df['url'] = df['url'].apply(lambda x: x.split('?')[0])
+
+    # Давхардлыг арилгах
+    df = df.drop_duplicates(subset=['url'], keep='first')
+
+    # Текст цэвэрлэгээ (HTML тэмдэгтүүд болон илүү зайг арилгах)
+    df['title'] = df['title'].apply(html.unescape)
+    df['title'] = df['title'].str.replace(r'\s+', ' ', regex=True).str.strip()
+    
+    # Хоосон утгыг нөхөх
+    df['category'] = df['category'].fillna('Бусад')
+    
+    return df
 
 def scrape_montsame():
     url = "https://montsame.mn/mn/"
@@ -48,16 +67,20 @@ def scrape_montsame():
 
 # Төслийг ажиллуулах
 data = scrape_montsame()
-df = pd.DataFrame(data).drop_duplicates(subset=['url'])
+raw_df = pd.DataFrame(data)
 
-if not df.empty:
-    print(f"Нийт {len(df)} мэдээ шинэ аргаар оллоо!")
-    print(df.head(3)) # Эхний 3-ыг шалгаж харах
-    
-    with sqlite3.connect('news_analytics.db') as conn:
-        df.to_sql('raw_news', conn, if_exists='replace', index=False)
+if not raw_df.empty:
+    # 1. Цэвэрлэгээний функцийг энд дуудаж, үр дүнг 'df' хувьсагчид авна
+    df = clean_news_data(raw_df)
+
+    print(f"Нийт {len(df)} цэвэрхэн мэдээ бэлэн боллоо!")
+    print(df.head(3))
+
+    with sqlite3.connect('news_analytics.bd') as conn:
+        # 2. Одоо 'raw_df'-ийг биш, цэвэрлэсэн 'df'-ийг SQL рүү хадгална
+        df.to_sql("raw_news", conn, if_exists="replace", index=False)
 else:
-    print("Шинэ аргаар ч дата олдсонгүй. Вэбсайт бүрэн динамик болсон байж магадгүй.")
+    print("Дата олдсонгүй.")
 
 load_dotenv()
 client = Groq(
@@ -129,7 +152,7 @@ with sqlite3.connect('news_analytics.db') as conn:
     """
     
     joined_df = pd.read_sql_query(query, conn)
-
+    
 print("--- Сөрөг өнгө аястай мэдээнүүд (Joined Data) ---")
 print(joined_df)
 
@@ -148,4 +171,6 @@ with sqlite3.connect('news_analytics.db') as conn:
     joined_df_p.to_csv('filename.csv', index=False)
 print("--- Eyreg and Uls tur өнгө аястай мэдээнүүд (Joined Data) ---")
 print(joined_df_p)
+
+
 
